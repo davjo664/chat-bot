@@ -1,7 +1,14 @@
 var express = require('express');
+var bodyParser = require('body-parser');
+var request = require('request');
+
 var app = express();
 
 app.set('port', (process.env.PORT || 5000));
+
+//To process the data
+app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.json());
 
 app.get('/', function(request, response) {
   response.send("Hello world");
@@ -11,7 +18,7 @@ app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
 
-app.get('/webhook', function(req, res) {
+app.get('/messanger', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
       req.query['hub.verify_token'] === "davjo664_verify") {
     console.log("Validating webhook");
@@ -22,40 +29,29 @@ app.get('/webhook', function(req, res) {
   }  
 });
 
-app.post('/webhook', function (req, res) {
-  var data = req.body;
+app.post('/messanger', function (req, res) {
+// var messaging = req.body.entry[0].messaging;
+if (req.body.object === 'page') {
 
-  console.log(data);
+	// Iterate over each entry - there may be multiple if batched
+	req.body.entry.forEach(function(entry) {
+	  var pageID = entry.id;
+	  var timeOfEvent = entry.time;
 
-  // Make sure this is a page subscription
-  if (data && data.object === 'page') {
+	  // Iterate over each messaging event
+	  entry.messaging.forEach(function(event) {
+	    if (event.message) {
+	      receivedMessage(event);
+	    } else {
+	      console.log("Webhook received unknown event: ", event);
+	    }
+	  });
+	});
 
-    // Iterate over each entry - there may be multiple if batched
-    data.entry.forEach(function(entry) {
-      var pageID = entry.id;
-      var timeOfEvent = entry.time;
-
-      // Iterate over each messaging event
-      entry.messaging.forEach(function(event) {
-        if (event.message) {
-          receivedMessage(event);
-        } else {
-          console.log("Webhook received unknown event: ", event);
-        }
-      });
-    });
-
-    // Assume all went well.
-    //
-    // You must send back a 200, within 20 seconds, to let us know
-    // you've successfully received the callback. Otherwise, the request
-    // will time out and we will keep trying to resend.
-    res.sendStatus(200);
-  } else {
-  	 console.error("Unable to read post.");
-  }
+	res.sendStatus(200);
+}
 });
-  
+
 function receivedMessage(event) {
   var senderID = event.sender.id;
   var recipientID = event.recipient.id;
@@ -65,8 +61,6 @@ function receivedMessage(event) {
   console.log("Received message for user %d and page %d at %d with message:", 
     senderID, recipientID, timeOfMessage);
   console.log(JSON.stringify(message));
-
-  var messageId = message.mid;
 
   var messageText = message.text;
   var messageAttachments = message.attachments;
@@ -105,10 +99,12 @@ function sendTextMessage(recipientId, messageText) {
   callSendAPI(messageData);
 }
 
+var PAGE_ACCESS_TOKEN = "EAAGWlbh1JEcBADaQrxYlyO8hCoKVWZAHP5Ku2DAcQ9ZCCc1AIjq4yWZAxMZCmBs43NYjCKJR5vYXEWYtgjZCXez2HiPPuvtZBRzHeR22d9ISXncCN4eeBrNZBxLzy0B2vocTSVlnZCX1pZBcAaDkYqrZAjsaoNU93vhNaEDBvGu2GHgZBVL7bAPZCuSl";
+
 function callSendAPI(messageData) {
   request({
     uri: 'https://graph.facebook.com/v2.6/me/messages',
-    qs: { access_token: 'EAAGWlbh1JEcBAB5PM30pieAuvDZBYGUXLb7LwbA98YZBZAqnrFpx9sgLzMUWFFr4W3Ul6hOUiQ6vZCfm9bZCOXJjYY88M3kItZCcMFO8cbYHZCucOVWr3jRwk6rkFXveZBFjrBgsxYWlxGsN6OVOKQfYYpmgCXgiJ97JWRKYNofUd2vhUnz9f7kX' },
+    qs: { access_token: PAGE_ACCESS_TOKEN },
     method: 'POST',
     json: messageData
 
