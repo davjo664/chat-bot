@@ -11,7 +11,7 @@ app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
 
-app.get('/webhook', function(req, res) {
+app.get('/messanger', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
       req.query['hub.verify_token'] === "davjo664_verify") {
     console.log("Validating webhook");
