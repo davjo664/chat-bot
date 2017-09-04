@@ -1,7 +1,9 @@
 var express = require('express');
 var bodyParser = require('body-parser');
 var request = require('request');
-
+var apiai = require('apiai');
+ 
+var apiaiApp = apiai("9a2dbe8c037847bd94079237e18190b8");
 var app = express();
 
 app.set('port', (process.env.PORT || 5000));
@@ -149,21 +151,38 @@ function sendGenericMessage(recipientId) {
 }
 
 function sendTextMessage(recipientId, messageText) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      text: messageText
-    }
-  };
 
-  callSendAPI(messageData);
+  var request = apiaiApp.textRequest(messageText, {
+      sessionId: recipientId
+  });
+   
+  request.on('response', function(response) {
+      console.log("Success!!");
+      console.log(response);
+
+      var messageData = {
+          recipient: {
+            id: recipientId
+          },
+          message: {
+            text: response.result.fulfillment.speech
+          }
+        };
+
+        callSendAPI(messageData);
+
+  });
+   
+  request.on('error', function(error) {
+    console.log("Error!!");
+      console.log(error);
+  });
+   
+  request.end();
 }
 
-var PAGE_ACCESS_TOKEN = "EAAGWlbh1JEcBADaQrxYlyO8hCoKVWZAHP5Ku2DAcQ9ZCCc1AIjq4yWZAxMZCmBs43NYjCKJR5vYXEWYtgjZCXez2HiPPuvtZBRzHeR22d9ISXncCN4eeBrNZBxLzy0B2vocTSVlnZCX1pZBcAaDkYqrZAjsaoNU93vhNaEDBvGu2GHgZBVL7bAPZCuSl";
-
 function callSendAPI(messageData) {
+  var PAGE_ACCESS_TOKEN = "EAAGWlbh1JEcBADaQrxYlyO8hCoKVWZAHP5Ku2DAcQ9ZCCc1AIjq4yWZAxMZCmBs43NYjCKJR5vYXEWYtgjZCXez2HiPPuvtZBRzHeR22d9ISXncCN4eeBrNZBxLzy0B2vocTSVlnZCX1pZBcAaDkYqrZAjsaoNU93vhNaEDBvGu2GHgZBVL7bAPZCuSl";
   request({
     uri: 'https://graph.facebook.com/v2.6/me/messages',
     qs: { access_token: PAGE_ACCESS_TOKEN },
