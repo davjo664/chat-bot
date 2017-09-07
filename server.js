@@ -77,6 +77,9 @@ function receivedMessage(event) {
       case 'generic':
         sendGenericMessage(senderID);
         break;
+      case 'button':
+        sendButtonMessage(senderID);
+        break;
 
       default:
         sendTextMessage(senderID, messageText);
@@ -142,6 +145,42 @@ function sendGenericMessage(recipientId) {
               payload: "Payload for second bubble",
             }]
           }]
+        }
+      }
+    }
+  };  
+
+  callSendAPI(messageData);
+}
+
+function sendButtonMessage(recipientId) {
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      attachment: {
+        type: "template",
+        payload: {
+          "template_type":"button",
+          "text":"What do you want to do next?",
+          "buttons":[
+            {
+              "type":"postback",
+              "title":"Sport events",
+              "payload":"event_sport"
+            },
+            {
+              "type":"postback",
+              "title":"Social events",
+              "payload":"event_social"
+            },
+            {
+              "type":"web_url",
+              "url":"https://www.google.se/maps",
+              "title":"Show on google maps"
+            }
+          ]
         }
       }
     }
