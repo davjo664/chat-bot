@@ -30,10 +30,28 @@ async function findEvent(parameters) {
   // Aktivitet
   // evenemang
 
-  console.log("http://visitlinkoping.se/evenemang?q="+parameters["activity"]+"&type=1&category="+parameters["category"]+"&date_from="+parameters["date"]+"&date_to="+parameters["date"]+"&_format=json&render=raw");
+  // if(!parameters["category"] && (parameters["activity"] === "football" || parameters["activity"] === "hockey" || parameters["activity"] === "basketball")) {
+  //   parameters["category"] = "sportevent";
+  //   //TODO: else if More categories
+  // } else if(!parameters["category"] && parameters["activity"] === "museum") {
+  //   parameters["category"] = "museer";
+  // }
+
+  var isEvent = 1;
+  //TODO FIX
+  // if(parameters["activity"] === "museum" || parameters["activity"] === "teater" || parameters["activity"] === "bowling") {
+  //   isEvent = 0;
+  // }
+  if(parameters["passive-or-active"] == "passive") {
+    isEvent = 1;
+  }
+  if(parameters["passive-or-active"] == "active") {
+    isEvent = 0;
+  }
+  console.log("http://visitlinkoping.se/evenemang?q="+parameters["activity"]+"&type="+isEvent+"&category="+parameters["category"]+"&date_from="+parameters["date"]+"&date_to="+parameters["date"]+"&_format=json&render=raw");
 
   var options = {
-    uri: "http://visitlinkoping.se/evenemang?q="+parameters["activity"]+"&type=1&category="+parameters["category"]+"&date_from="+parameters["date"]+"&date_to="+parameters["date"]+"&_format=json&render=raw",
+    uri: "http://visitlinkoping.se/evenemang?q="+parameters["activity"]+"&type="+isEvent+"&category="+parameters["category"]+"&date_from="+parameters["date"]+"&date_to="+parameters["date"]+"&_format=json&render=raw",
     headers: {
       'User-Agent': 'Request-Promise'
     }
@@ -66,21 +84,39 @@ async function findEvent(parameters) {
           console.log("JSON.parse(data) crashed"+ error);
           //Remove empty character in json
           data = data.slice(1);
-          console.log("FIRST");
-          console.log(data[0]);
         }
         jsonArray = JSON.parse(data);
 
-        var category = parameters["category"];
-        var title = jsonArray[0].title[0].value;
-        var urlTitle = title.replace(/\s+/g, '-').toLowerCase();
-        var url = "http://visitlinkoping.se/"+category+"/"+urlTitle;
-        console.log(url);
+        for(var i = 0; i < jsonArray.length; i++) {
+          var category = parameters["category"] ? "/"+parameters["category"] : "";
+          var title = jsonArray[i].title[0].value;
+          console.log(title);
+          // var urlTitle = title.replace(/\s+/g, '-').toLowerCase();
+          // console.log(urlTitle);
+          // if(urlTitle[urlTitle.length-1] === "-") {
+          //   urlTitle = urlTitle.slice(urlTitle.length-1);
+          //   console.log("SLICE");
+          //   console.log(urlTitle);
+          // }
+          // var url = "http://visitlinkoping.se"+category+"/"+urlTitle;
+          var url = "http://www.google.com/search?q=visitlinkoping.se "+title+"&btnI";
+          var imgUrl = jsonArray[i].field_image_current[0];
+          console.log(url);
+          var searchString = parameters["activity"].toLowerCase();
 
-
-        apiaiResponse["speech"] = "I found this event that you may find interesting:\n\n"+title;
-        apiaiResponse["displayText"] = "I found this event that you may find interesting:\n\n"+title;
-        apiaiResponse["data"] = {url: url};
+          console.log(searchString);
+          // console.log(urlTitle);
+          var lowerCaseTitle = title.toLowerCase();
+          if(lowerCaseTitle.indexOf(searchString) !== -1 || isEvent) {
+            apiaiResponse["speech"] = "I found this event that you may find interesting.";
+            apiaiResponse["displayText"] = "I found this event that you may find interesting.";
+            apiaiResponse["data"] = {url: url, eventName: title, imgUrl: imgUrl};
+            resolve(apiaiResponse)
+            return;
+          }
+        }
+        apiaiResponse["speech"] = "Sorry, I couldn't find any event for you";
+        apiaiResponse["displayText"] = "Sorry, I couldn't find any event for you";
         resolve(apiaiResponse)
     })
     .catch(function (err) {
@@ -301,28 +337,34 @@ function sendTextMessage(recipientId, messageText) {
 
       var messageData;
 
-      if(response.result.fulfillment.data && response.result.fulfillment.data.url) {
+      if(response.result.fulfillment.data && response.result.fulfillment.data.eventName 
+        && response.result.fulfillment.data.url && response.result.fulfillment.data.imgUrl) {
         messageData = {
           recipient: {
             id: recipientId
           },
-          message: {
-            attachment: {
-              type: "template",
-              payload: {
-                "template_type":"button",
-                "text":response.result.fulfillment.speech,
-                "buttons":[
-                  {
-                    "type":"web_url",
-                    "url":response.result.fulfillment.data.url,
-                    "title":"More info"
+          "message":{
+            "attachment":{
+              "type":"template",
+              "payload":{
+                "template_type":"generic",
+                "elements":[
+                   {
+                    "title":response.result.fulfillment.data.eventName,
+                    "image_url":response.result.fulfillment.data.imgUrl,
+                    "buttons":[
+                      {
+                        "type":"web_url",
+                        "url":response.result.fulfillment.data.url,
+                        "title":"More information"
+                      }             
+                    ]      
                   }
                 ]
               }
             }
           }
-        }; 
+        }
       } else {
         messageData = {
           recipient: {
