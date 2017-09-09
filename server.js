@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var request = require('request');
 var apiai = require('apiai');
+var rp = require('request-promise');
  
 var apiaiApp = apiai("a23d026b36b2408eb12aa97a867a2b81");
 var app = express();
@@ -20,7 +21,7 @@ app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
 
-app.post('/apiai', function(req, res) {
+app.post('/apiai', async function(req, res) {
    const body = req.body
 
     const action = body.result.action
@@ -28,23 +29,50 @@ app.post('/apiai', function(req, res) {
     // const conexts = body.results.contexts
 
     var apiaiResponse = {
-      speech: "fullfillment from node",
-      displayText: "fullfillment from node"
+      speech: "",
+      displayText: ""
     }
 
     console.log('Action: ', action, 'Parameters: ', parameters)
 
-    // switch (action) {
-    //   case Actions.parking:
-    //     responseMessage = await findNearestParkingSpot(parameters['address'])
-    //     break
-    //   default:
-    //     responseMessage = 'Something went wrong, sorry!'
-    //     break
-    // }
+    switch (action) {
+      //Todo add to Actions emum
+      case 'event': 
+        apiaiResponse = await findEvent(parameters)
+        break
+      default:
+        apiaiResponse = 'Something went wrong, sorry!'
+        break
+    }
 
     res.send(JSON.stringify(apiaiResponse))
 });
+
+async function findEvent(parameters) {
+  var parameters = {
+    activity: parameters["activity"],
+    address: parameters["address"],
+    category: parameters["category"],
+    category: parameters["date"]
+  }
+
+  var options = {
+    uri: 'http://visitlinkoping.se/evenemang?q=&type=1&category=Aktivitet&date_from=2017-02-10&date_to=2017-08-04&_format=json&render=raw',
+    headers: {
+        'User-Agent': 'Request-Promise'
+    },
+    json: true // Automatically parses the JSON string in the response
+  };
+
+  try {
+    const data = await rp(options)
+    console.log(data);
+    return "data collected";
+  } catch(error) {
+    return "Failed"; 
+  }
+
+}
 
 app.get('/messanger', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
