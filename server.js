@@ -22,19 +22,21 @@ app.listen(app.get('port'), function() {
 });
 
 async function findEvent(parameters) {
-  var parameters = {
-    activity: parameters["activity"],
-    address: parameters["address"],
-    category: parameters["category"],
-    category: parameters["date"]
-  }
+  return new Promise((resolve, reject) => {
+
+    console.log(parameters);
+  //Lista av kategorier i visitlinkoping api:
+  // sporevent
+  // Aktivitet
+  // evenemang
+
+  console.log("http://visitlinkoping.se/evenemang?q="+parameters["activity"]+"&type=1&category="+parameters["category"]+"&date_from="+parameters["date"]+"&date_to="+parameters["date"]+"&_format=json&render=raw");
 
   var options = {
-    uri: 'http://visitlinkoping.se/evenemang?q=&type=1&category=Aktivitet&date_from=2017-02-10&date_to=2017-08-04&_format=json&render=raw',
+    uri: "http://visitlinkoping.se/evenemang?q="+parameters["activity"]+"&type=1&category="+parameters["category"]+"&date_from="+parameters["date"]+"&date_to="+parameters["date"]+"&_format=json&render=raw",
     headers: {
-        'User-Agent': 'Request-Promise'
-    },
-    json: true // Automatically parses the JSON string in the response
+      'User-Agent': 'Request-Promise'
+    }
   };
 
   var apiaiResponse = {
@@ -42,18 +44,53 @@ async function findEvent(parameters) {
     displayText: ""
   }
 
-  try {
-    const data = await rp(options)
-    console.log(data);
-    apiaiResponse["speech"] = "Got data";
-    apiaiResponse["displayText"] = "Got data";
-    return apiaiResponse;
-  } catch(error) {
-    apiaiResponse["speech"] = "failed to get data";
-    apiaiResponse["displayText"] = "failed to get data";
-    return apiaiResponse;
-  }
+  // try {
+  //   const data = await rp(options)
+  //   console.log("THE EVENT");
+  //   console.log(data);
+  //   apiaiResponse["speech"] = data[0].title;
+  //   apiaiResponse["displayText"] = data[0].title;
+  //   return apiaiResponse;
+  // } catch(error) {
+  //   apiaiResponse["speech"] = "failed to get data";
+  //   apiaiResponse["displayText"] = "failed to get data";
+  //   return apiaiResponse;
+  // }
 
+  rp(options)
+    .then(function (data) {
+        console.log("THE EVENT");
+        try {
+          jsonArray = JSON.parse(data);
+        } catch(error) {
+          console.log("JSON.parse(data) crashed"+ error);
+          //Remove empty character in json
+          data = data.slice(1);
+          console.log("FIRST");
+          console.log(data[0]);
+        }
+        jsonArray = JSON.parse(data);
+
+        var category = parameters["category"];
+        var title = jsonArray[0].title[0].value;
+        var urlTitle = title.replace(/\s+/g, '-').toLowerCase();
+        var url = "http://visitlinkoping.se/"+category+"/"+urlTitle;
+        console.log(url);
+
+
+        apiaiResponse["speech"] = "I found this event that you may find interesting:\n\n"+title;
+        apiaiResponse["displayText"] = "I found this event that you may find interesting:\n\n"+title;
+        apiaiResponse["data"] = {url: url};
+        resolve(apiaiResponse)
+    })
+    .catch(function (err) {
+      console.log("REJECT");
+      apiaiResponse["speech"] = "failed to get data";
+      apiaiResponse["displayText"] = "failed to get data";
+      reject(apiaiResponse);
+    });
+  })
+  
 }
 
 app.post('/apiai', async function(req, res) {
@@ -73,10 +110,10 @@ app.post('/apiai', async function(req, res) {
     switch (action) {
       //Todo add to Actions emum
       case 'event': 
-        apiaiResponse = await findEvent(parameters)
+        apiaiResponse = await findEvent(parameters);
         break
       default:
-        apiaiResponse = 'Something went wrong, sorry!'
+        apiaiResponse = "Something went wrong, sorry!";
         break
     }
 
@@ -262,7 +299,32 @@ function sendTextMessage(recipientId, messageText) {
       console.log("Success!!");
       console.log(response);
 
-      var messageData = {
+      var messageData;
+
+      if(response.result.fulfillment.data && response.result.fulfillment.data.url) {
+        messageData = {
+          recipient: {
+            id: recipientId
+          },
+          message: {
+            attachment: {
+              type: "template",
+              payload: {
+                "template_type":"button",
+                "text":response.result.fulfillment.speech,
+                "buttons":[
+                  {
+                    "type":"web_url",
+                    "url":response.result.fulfillment.data.url,
+                    "title":"More info"
+                  }
+                ]
+              }
+            }
+          }
+        }; 
+      } else {
+        messageData = {
           recipient: {
             id: recipientId
           },
@@ -270,8 +332,9 @@ function sendTextMessage(recipientId, messageText) {
             text: response.result.fulfillment.speech
           }
         };
+      }
 
-        callSendAPI(messageData);
+      callSendAPI(messageData);
 
   });
    
