@@ -20,19 +20,31 @@ app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
 
-// app.get('/apiai', function(req, res) {
-//    const body = req.body
+app.post('/apiai', function(req, res) {
+   const body = req.body
 
-//     const action = body.result.action
-//     const parameters = body.result.parameters
-//     // const conexts = body.results.contexts
+    const action = body.result.action
+    const parameters = body.result.parameters
+    // const conexts = body.results.contexts
 
-//     console.log('Action: ', action, 'Parameters: ', parameters)
+    var apiaiResponse = {
+      speech: "fullfillment from node",
+      displayText: "fullfillment from node"
+    }
 
-//     const response: IResponseJson = await resolveMessage(action, parameters)
+    console.log('Action: ', action, 'Parameters: ', parameters)
 
-//     res.send(JSON.stringify(response))
-// });
+    // switch (action) {
+    //   case Actions.parking:
+    //     responseMessage = await findNearestParkingSpot(parameters['address'])
+    //     break
+    //   default:
+    //     responseMessage = 'Something went wrong, sorry!'
+    //     break
+    // }
+
+    res.send(JSON.stringify(apiaiResponse))
+});
 
 app.get('/messanger', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
