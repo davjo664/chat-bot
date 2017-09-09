@@ -21,6 +21,41 @@ app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
 
+async function findEvent(parameters) {
+  var parameters = {
+    activity: parameters["activity"],
+    address: parameters["address"],
+    category: parameters["category"],
+    category: parameters["date"]
+  }
+
+  var options = {
+    uri: 'http://visitlinkoping.se/evenemang?q=&type=1&category=Aktivitet&date_from=2017-02-10&date_to=2017-08-04&_format=json&render=raw',
+    headers: {
+        'User-Agent': 'Request-Promise'
+    },
+    json: true // Automatically parses the JSON string in the response
+  };
+
+  var apiaiResponse = {
+    speech: "",
+    displayText: ""
+  }
+
+  try {
+    const data = await rp(options)
+    console.log(data);
+    apiaiResponse["speech"] = "Got data";
+    apiaiResponse["displayText"] = "Got data";
+    return apiaiResponse;
+  } catch(error) {
+    apiaiResponse["speech"] = "failed to get data";
+    apiaiResponse["displayText"] = "failed to get data";
+    return apiaiResponse;
+  }
+
+}
+
 app.post('/apiai', async function(req, res) {
    const body = req.body
 
@@ -47,32 +82,6 @@ app.post('/apiai', async function(req, res) {
 
     res.send(JSON.stringify(apiaiResponse))
 });
-
-async function findEvent(parameters) {
-  var parameters = {
-    activity: parameters["activity"],
-    address: parameters["address"],
-    category: parameters["category"],
-    category: parameters["date"]
-  }
-
-  var options = {
-    uri: 'http://visitlinkoping.se/evenemang?q=&type=1&category=Aktivitet&date_from=2017-02-10&date_to=2017-08-04&_format=json&render=raw',
-    headers: {
-        'User-Agent': 'Request-Promise'
-    },
-    json: true // Automatically parses the JSON string in the response
-  };
-
-  try {
-    const data = await rp(options)
-    console.log(data);
-    return "data collected";
-  } catch(error) {
-    return "Failed"; 
-  }
-
-}
 
 app.get('/messanger', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
