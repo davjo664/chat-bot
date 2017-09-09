@@ -3,7 +3,7 @@ var bodyParser = require('body-parser');
 var request = require('request');
 var apiai = require('apiai');
  
-var apiaiApp = apiai("9a2dbe8c037847bd94079237e18190b8");
+var apiaiApp = apiai("a23d026b36b2408eb12aa97a867a2b81");
 var app = express();
 
 app.set('port', (process.env.PORT || 5000));
@@ -19,6 +19,20 @@ app.get('/', function(request, response) {
 app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
+
+// app.get('/apiai', function(req, res) {
+//    const body = req.body
+
+//     const action = body.result.action
+//     const parameters = body.result.parameters
+//     // const conexts = body.results.contexts
+
+//     console.log('Action: ', action, 'Parameters: ', parameters)
+
+//     const response: IResponseJson = await resolveMessage(action, parameters)
+
+//     res.send(JSON.stringify(response))
+// });
 
 app.get('/messanger', function(req, res) {
   if (req.query['hub.mode'] === 'subscribe' &&
