@@ -30,6 +30,7 @@ async function findEvent(parameters) {
   // Aktivitet
   // evenemang
 
+  //TODO: Add categories to choose between
   // if(!parameters["category"] && (parameters["activity"] === "football" || parameters["activity"] === "hockey" || parameters["activity"] === "basketball")) {
   //   parameters["category"] = "sportevent";
   //   //TODO: else if More categories
@@ -38,10 +39,6 @@ async function findEvent(parameters) {
   // }
 
   var isEvent = 1;
-  //TODO FIX
-  // if(parameters["activity"] === "museum" || parameters["activity"] === "teater" || parameters["activity"] === "bowling") {
-  //   isEvent = 0;
-  // }
   if(parameters["passive-or-active"] == "passive") {
     isEvent = 1;
   }
@@ -61,19 +58,6 @@ async function findEvent(parameters) {
     speech: "",
     displayText: ""
   }
-
-  // try {
-  //   const data = await rp(options)
-  //   console.log("THE EVENT");
-  //   console.log(data);
-  //   apiaiResponse["speech"] = data[0].title;
-  //   apiaiResponse["displayText"] = data[0].title;
-  //   return apiaiResponse;
-  // } catch(error) {
-  //   apiaiResponse["speech"] = "failed to get data";
-  //   apiaiResponse["displayText"] = "failed to get data";
-  //   return apiaiResponse;
-  // }
 
   rp(options)
     .then(function (data) {
